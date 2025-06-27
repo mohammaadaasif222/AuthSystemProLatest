@@ -1,0 +1,200 @@
+Authentication & Authorization System Development Prompt
+System Overview
+Create a comprehensive authentication and authorization system with role-based access control, company management, and integrated Zoom meeting functionality.
+Authentication Requirements
+Login System
+
+No registration page - only login functionality
+Secure login with email/username and password
+JWT-based authentication
+Session management with refresh tokens
+Password hashing using bcrypt or similar
+
+User Roles & Permissions
+1. Super Admin
+
+Highest privilege level
+Can create companies
+Can create company_admin accounts and assign them to companies
+Can create employee accounts and assign them to any company
+Has access to system-wide dashboard
+Can view all companies and users
+Can manage system settings
+
+2. Company Admin
+
+Company-level administrator
+Can only be created by super_admin
+Can create and manage employees within their assigned company only
+Can access company dashboard with "Connect Meeting" button
+Can create and manage 24/7 Zoom meetings for their company
+Can receive messages and voice messages from employees
+Cannot create other company_admin accounts
+
+3. Employee
+
+Standard user level
+Can only be created by super_admin or company_admin
+Must be assigned to a specific company
+Can access "Join Meeting" button to join company's Zoom meeting
+Can send text messages and voice messages to their company_admin only
+Limited dashboard access
+
+Database Schema Requirements
+Users Table
+sql- id (Primary Key)
+- email (Unique)
+- password_hash
+- role (enum: 'super_admin', 'company_admin', 'employee')
+- company_id (Foreign Key, nullable for super_admin)
+- first_name
+- last_name
+- is_active
+- created_at
+- updated_at
+- created_by (Foreign Key to Users)
+Companies Table
+sql- id (Primary Key)
+- name
+- description
+- is_active
+- zoom_meeting_id
+- zoom_meeting_url
+- zoom_meeting_password
+- created_at
+- updated_at
+- created_by (Foreign Key to Users)
+Messages Table
+sql- id (Primary Key)
+- sender_id (Foreign Key to Users)
+- receiver_id (Foreign Key to Users)
+- company_id (Foreign Key to Companies)
+- message_type (enum: 'text', 'voice')
+- content (text content or voice file path)
+- is_read
+- created_at
+Zoom Integration Requirements
+API Configuration
+javascriptconst zoomConfig = {
+  clientId: process.env.ZOOM_CLIENT_ID || "eFwvmyl2TcSKNM1iyMTlng",
+  clientSecret: process.env.ZOOM_CLIENT_SECRET || "FYldVq4AcTDt9IclIp9eEkuTUc1IPff6",
+  accountId: process.env.ZOOM_ACCOUNT_ID || "OZWhroVYT0adDjOQOUAZSA"
+};
+Zoom Meeting Features
+
+24/7 Persistent Meetings: Create recurring meetings with no fixed end time
+Company-specific Meetings: Each company gets its own dedicated meeting room
+Meeting Management: Company admins can start/stop/manage their company meeting
+Join Functionality: Employees can join their company's meeting directly
+
+API Endpoints Structure
+Authentication Endpoints
+POST /api/auth/login
+POST /api/auth/logout
+POST /api/auth/refresh-token
+GET /api/auth/profile
+User Management Endpoints (Role-based)
+POST /api/users/create-company-admin (super_admin only)
+POST /api/users/create-employee (super_admin, company_admin)
+GET /api/users (role-based filtering)
+PUT /api/users/:id (role-based permissions)
+DELETE /api/users/:id (role-based permissions)
+Company Management Endpoints
+POST /api/companies (super_admin only)
+GET /api/companies (role-based access)
+PUT /api/companies/:id (super_admin, assigned company_admin)
+DELETE /api/companies/:id (super_admin only)
+Zoom Integration Endpoints
+POST /api/zoom/create-meeting (company_admin only)
+GET /api/zoom/meeting-info (company users only)
+POST /api/zoom/join-meeting (employees only)
+PUT /api/zoom/update-meeting (company_admin only)
+Messaging Endpoints
+POST /api/messages/send (employees to company_admin only)
+GET /api/messages (role-based: company_admin sees all company messages)
+PUT /api/messages/:id/read (mark as read)
+POST /api/messages/voice (voice message upload)
+Frontend Dashboard Requirements
+Super Admin Dashboard
+
+Company management interface
+User creation and management
+System analytics
+Role assignment interface
+
+Company Admin Dashboard
+
+"Connect Meeting" button - prominently displayed
+Meeting management controls
+Employee list and management
+Message inbox (text and voice messages from employees)
+Company settings
+
+Employee Dashboard
+
+"Join Meeting" button - to join company meeting
+Message interface to send messages to company_admin
+Voice message recording and sending
+Basic profile management
+
+Technical Implementation Requirements
+Backend Framework
+
+Node.js with Express.js or similar
+MongoDB/PostgreSQL for database
+JWT for authentication
+Multer for voice message file uploads
+Zoom SDK/API integration
+
+Frontend Framework
+
+React.js or Vue.js
+Role-based routing and component rendering
+WebRTC for voice message recording
+Responsive design for mobile/desktop
+
+Security Requirements
+
+Input validation and sanitization
+Rate limiting on API endpoints
+CORS configuration
+Environment variable management
+Password complexity requirements
+Secure file upload handling
+
+Workflow Implementation
+Company Creation Workflow
+
+Super admin creates company
+Super admin creates company_admin and assigns to company
+Company_admin logs in and sets up Zoom meeting
+Super admin or company_admin creates employees for the company
+
+Meeting Management Workflow
+
+Company_admin clicks "Connect Meeting"
+System creates 24/7 Zoom meeting using provided credentials
+Meeting details stored in company record
+Employees can see "Join Meeting" button
+Meeting runs continuously until manually stopped
+
+Communication Workflow
+
+Employee sends text/voice message
+Message routed only to their company_admin
+Company_admin receives notification
+Company_admin can view/listen to messages in dashboard
+
+Environment Variables Required
+ZOOM_CLIENT_ID=eFwvmyl2TcSKNM1iyMTlng
+ZOOM_CLIENT_SECRET=FYldVq4AcTDt9IclIp9eEkuTUc1IPff6
+ZOOM_ACCOUNT_ID=OZWhroVYT0adDjOQOUAZSA
+JWT_SECRET=your_jwt_secret
+DB_CONNECTION_STRING=your_database_url
+Testing Requirements
+
+Unit tests for authentication logic
+Integration tests for Zoom API
+Role-based access control testing
+Message routing validation
+File upload security testing
